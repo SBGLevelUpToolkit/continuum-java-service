@@ -1,0 +1,3 @@
+CONTINUUM_DB_URL=jdbc:mysql://<dummy_url_to_sql>/ContinuumAssessment
+CONTINUUM_DB_USERNAME=<dummy_username>
+CONTINUUM_DB_PASSWORD=<dummy_password>
