@@ -28,15 +28,16 @@ public class ContinuumService {
             props.load(in);
             in.close();
 
-            String[] dbDetails = new String[3];
+            String[] dbDetails = new String[4];
             dbDetails[0] = props.get("CONTINUUM_DB_URL").toString();
             dbDetails[1] = props.get("CONTINUUM_DB_USERNAME").toString();
             dbDetails[2] = props.get("CONTINUUM_DB_PASSWORD").toString();
+            dbDetails[3] = props.get("MY_SQL_URL").toString();
 
             return dbDetails;
         }
         catch (Exception exception){
-            return new String[] {"", "", ""};
+            return new String[] {"", "", "", ""};
         }
     }
 
@@ -186,10 +187,63 @@ public class ContinuumService {
         return allAssessmentsDone;
     }
 
+    private static void createDatabaseIfItDoesNotExists(){
+        Connection conn = null;
+        Statement statement = null;
+        String[] dbDetails = getDBDetails();
+
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            conn = DriverManager.getConnection(dbDetails[3], dbDetails[1], dbDetails[2]);
+            statement = conn.createStatement();
+            statement.executeUpdate("CREATE DATABASE IF NOT EXISTS ContinuumAssessment;");
+            createTableIfItDoesNotExists();
+        }
+        catch (Exception exception){
+
+        }
+    }
+
+    private static void createTableIfItDoesNotExists(){
+        Connection conn = null;
+        Statement statement = null;
+        String[] dbDetails = getDBDetails();
+
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            conn = DriverManager.getConnection(dbDetails[0], dbDetails[1], dbDetails[2]);
+            statement = conn.createStatement();
+            String sqlCreate = "CREATE TABLE IF NOT EXISTS ContinuumAssessmentResults"
+                    + "  (teamName           VARCHAR(150),"
+                    + "   strategy           INTEGER,"
+                    + "   planning           INTEGER,"
+                    + "   coding             INTEGER,"
+                    + "   ci                 INTEGER,"
+                    + "   incident           INTEGER,"
+                    + "   risk               INTEGER,"
+                    + "   design             INTEGER,"
+                    + "   teaming            INTEGER,"
+                    + "   release            INTEGER,"
+                    + "   quality            INTEGER,"
+                    + "   environments       INTEGER,"
+                    + "   featureteams       INTEGER,"
+                    + "   dateassessed       VARCHAR(100),"
+                    + "   portfolio          VARCHAR(150)"
+                    + "   UNIQUE KEY 'my_unique_key' ('teamName','dateassessed','portfolio'))";
+
+            statement.execute(sqlCreate);
+        }
+        catch (Exception exception){
+
+        }
+    }
+
     public static void main(String[] args) {
 
         post("/saveTeamData", new Route() {
             public Object handle(Request request, Response response) throws Exception {
+
+                createDatabaseIfItDoesNotExists();
                 Connection conn = null;
                 Statement stmt = null;
 
