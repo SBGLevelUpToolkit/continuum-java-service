@@ -6,14 +6,12 @@ import spark.Response;
 import spark.Route;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
+import java.sql.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.sql.*;
 import java.util.Properties;
 
 import static com.continuum.JsonUtil.json;
@@ -145,6 +143,9 @@ public class ContinuumService {
                 assessment.setFeatureTeams(featureteams);
                 overallFeatureTeams += Integer.parseInt(featureteams);
 
+                String rawData = resultSet.getString("rawdata");
+                assessment.setRawData(rawData);
+
                 numberOfRecords++;
                 assessments.add(assessment);
             }
@@ -162,6 +163,7 @@ public class ContinuumService {
             assessmentOverall.setQa(String.valueOf(overallQA/numberOfRecords));
             assessmentOverall.setEnvironments(String.valueOf(overallEnvironments/numberOfRecords));
             assessmentOverall.setFeatureTeams(String.valueOf(overallFeatureTeams/numberOfRecords));
+            assessmentOverall.setRawData("{}");
             assessments.add(assessmentOverall);
 
             return new Assessments(dateAssessed, portfolio, assessments);
@@ -228,7 +230,8 @@ public class ContinuumService {
                     + "   environments       INTEGER,"
                     + "   featureteams       INTEGER,"
                     + "   dateassessed       VARCHAR(100),"
-                    + "   portfolio          VARCHAR(150)"
+                    + "   portfolio          VARCHAR(150),"
+                    + "   rawdata            VARCHAR(200)"
                     + "   UNIQUE KEY 'my_unique_key' ('teamName','dateassessed','portfolio'))";
 
             statement.execute(sqlCreate);
@@ -263,7 +266,7 @@ public class ContinuumService {
                 DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
                 String dateOfEvaluation = dateFormat.format(new Date());
                 String portfolioName = request.queryParams("portfolioName");
-
+                String rawData = request.queryParams("rawData");
                 String[] dbDetails = getDBDetails();
 
                 try {
@@ -272,8 +275,8 @@ public class ContinuumService {
                     stmt = conn.createStatement();
 
                     String sql = String.format("REPLACE INTO ContinuumAssessmentResults " +
-                                    "VALUES ('%s',%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'%s', '%s')", teamName, strategy, planning, coding, ci,
-                            incident, risk, design, teaming, release, qa, environments, featureTeams, dateOfEvaluation, portfolioName);
+                                    "VALUES ('%s',%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'%s', '%s', '%s')", teamName, strategy, planning, coding, ci,
+                            incident, risk, design, teaming, release, qa, environments, featureTeams, dateOfEvaluation, portfolioName, rawData);
 
                     int insertedRecord = stmt.executeUpdate(sql);
 

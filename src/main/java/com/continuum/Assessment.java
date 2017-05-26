@@ -14,6 +14,7 @@ public class Assessment {
     private String qa;
     private String environments;
     private String featureTeams;
+    private String rawData;
 
     public Assessment() {
     }
@@ -68,5 +69,9 @@ public class Assessment {
 
     public void setTeamName(String teamName) {
         this.teamName = teamName;
+    }
+
+    public void setRawData(String rawData) {
+        this.rawData = rawData;
     }
 }
