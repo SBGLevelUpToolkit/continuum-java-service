@@ -189,6 +189,72 @@ public class ContinuumService {
         return allAssessmentsDone;
     }
 
+    private static Assessment getAssessmentForTeam(String teamName){
+        Connection conn = null;
+        Statement stmt = null;
+        Assessment assessment = new Assessment();
+        String[] dbDetails = getDBDetails();
+
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            conn = DriverManager.getConnection(dbDetails[0], dbDetails[1], dbDetails[2]);
+            stmt = conn.createStatement();
+
+            String queryStatement = "SELECT * from ContinuumAssessmentResults where teamName = '"
+                    + teamName + "'";
+            ResultSet resultSet = stmt.executeQuery(queryStatement);
+
+
+            while (resultSet.next()){
+                assessment.setTeamName(resultSet.getString("teamName"));
+
+                String strategy = resultSet.getString("strategy");
+                assessment.setStrategy(strategy);
+
+                String planning = resultSet.getString("planning");
+                assessment.setPlanning(planning);
+
+                String coding = resultSet.getString("coding");
+                assessment.setCoding(coding);
+
+                String ci = resultSet.getString("ci");
+                assessment.setCi(ci);
+
+                String incident = resultSet.getString("incident");
+                assessment.setIncident(incident);
+
+                String risk = resultSet.getString("risk");
+                assessment.setRisk(risk);
+
+                String design = resultSet.getString("design");
+                assessment.setDesign(design);
+
+                String teaming = resultSet.getString("teaming");
+                assessment.setTeaming(teaming);
+
+                String release = resultSet.getString("release");
+                assessment.setRelease(release);
+
+                String quality = resultSet.getString("quality");
+                assessment.setQa(quality);
+
+                String environments = resultSet.getString("environments");
+                assessment.setEnvironments(environments);
+
+                String featureteams = resultSet.getString("featureteams");
+                assessment.setFeatureTeams(featureteams);
+
+                String rawData = resultSet.getString("rawdata");
+                assessment.setRawData(rawData);
+            }
+
+            return assessment;
+        }
+        catch (Exception exception){
+            return assessment;
+        }
+    }
+
     private static void createDatabaseIfItDoesNotExists(){
         Connection conn = null;
         Statement statement = null;
@@ -296,6 +362,15 @@ public class ContinuumService {
         get("/assessments", new Route() {
             public Object handle(Request req, Response res) throws Exception {
                 return getAssessments();
+            }
+        }, json());
+
+
+        get("/assessment", new Route() {
+            public Object handle(Request request, Response response) throws Exception {
+                String teamName = request.queryParams("teamName");
+                Assessment teamAssessment = getAssessmentForTeam(teamName);
+                return teamAssessment;
             }
         }, json());
 
