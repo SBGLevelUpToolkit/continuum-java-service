@@ -8,7 +8,6 @@
     <artifactId>Continuum-Assessment-Platform-Service</artifactId>
     <version>1.0</version>
 
-
     <dependencies>
         <dependency>
             <groupId>com.sparkjava</groupId>
