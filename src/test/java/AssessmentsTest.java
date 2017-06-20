@@ -33,6 +33,7 @@ public class AssessmentsTest {
     public void shouldKnowTwoAssessmentsWithSameValuesAreEqual(){
         Assessments anotherAssessments = new Assessments(dateAssessed, portfolioName, assessmentArray);
         assertThat(assessments, is(equalTo(anotherAssessments)));
+        assertEquals(assessments.hashCode(), anotherAssessments.hashCode());
     }
 
     @Test
