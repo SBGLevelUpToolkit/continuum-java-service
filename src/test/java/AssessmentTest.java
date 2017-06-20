@@ -22,7 +22,9 @@ public class AssessmentTest {
     @Test
     public void shouldKnowThatAnAssessmentCanBeCreatedWithNoAttributesSet(){
         assertEquals(assessment, anotherAssessment);
+        assertEquals(assessment.hashCode(), anotherAssessment.hashCode());
     }
+
 
     @Test
     public void shouldKnowThatAnAssessmentCanBeCreatedWithFeatureTeamsSet(){
