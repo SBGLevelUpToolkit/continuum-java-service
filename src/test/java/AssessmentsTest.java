@@ -61,7 +61,6 @@ public class AssessmentsTest {
     public void shouldKnowTwoAssessmentsWithSameAssessmentValuesAreEqual(){
         ArrayList<Assessment> anotherAssessmentsArray = new ArrayList<Assessment>();
         Assessment assessment = new Assessment();
-
         assessmentArray.add(assessment);
         anotherAssessmentsArray.add(assessment);
 
