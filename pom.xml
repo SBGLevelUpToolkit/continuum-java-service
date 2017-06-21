@@ -74,8 +74,8 @@
                 <configuration>
                     <instrumentation>
                         <excludes>
-                            <exclude>**/JsonUtil.class</exclude>
-                            <exclude>**/ContinuumService.class</exclude>
+                            <exclude>**/*JsonUtil.class</exclude>
+                            <exclude>**/*ContinuumService.class</exclude>
                         </excludes>
                     </instrumentation>
                     <format>xml</format>
