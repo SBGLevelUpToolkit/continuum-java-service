@@ -1,0 +1,194 @@
+# Example YAML to get you started quickly.
+# Be aware that YAML has indentation based scoping.
+# Code completion support is available so start typing for available options.
+swagger: '2.0'
+
+# This is your document metadata
+info:
+  version: "0.0.0"
+  title: Get All Assessments From Continuum API
+
+# Describe your paths here
+paths:
+  # This is a path endpoint. Change it.
+  /assessments:
+    # This is a HTTP operation
+    get:
+      # Describe this verb here. Note: you can use markdown
+      description: |
+        Gets `Assessments` objects.
+        This is a list of all the assessments that have been done so far grouped by portfolio and date of assessment.
+        
+      parameters:
+        # An example parameter that is in query and is required
+        -
+          name: noRawData
+          in: query
+          description: Specify whether you want to remove the raw data from the response.
+          required: false
+          type: boolean
+      
+      # Expected responses for this operation:
+      responses:
+        # Response code
+        200:
+          description: Successful response
+          # A schema describing your response object.
+          # Use JSON Schema format
+          schema:
+            title: ArrayOfAssessments
+            type: array
+            items:
+              title: Assessment
+              properties:
+                dateAssessed:
+                  type: string
+                portfolio:
+                  type: string
+                assessments:
+                  type: array
+                  items:
+                    required:
+                      - teamName
+                      - strategy
+                      - planning
+                      - coding
+                      - ci
+                      - incident
+                      - risk
+                      - design
+                      - teaming
+                      - release
+                      - qa
+                      - environments
+                      - featureTeams
+                    properties:
+                      teamName: 
+                        type: string
+                      strategy:
+                        type: number
+                        format: integer
+                      planning:
+                        type: number
+                        format: integer
+                      coding:
+                        type: number
+                        format: integer
+                      ci:
+                        type: number
+                        format: integer
+                      incident:
+                        type: number
+                        format: integer
+                      risk:
+                        type: number
+                        format: integer
+                      design:
+                        type: number
+                        format: integer
+                      teaming:
+                        type: number
+                        format: integer
+                      release:
+                        type: number
+                        format: integer
+                      qa:
+                        type: number
+                        format: integer
+                      environments:
+                        type: number
+                        format: integer
+                      featureTeams:
+                        type: number
+                        format: integer
+                      rawData:
+                        type: object
+                  
+  /assessment:
+    # This is a HTTP operation
+    get:
+      # Describe this verb here. Note: you can use markdown
+      description: |
+        Gets `Assessment` object.
+        This is an assessment for a single team.
+      # This is array of GET operation parameters:
+      parameters:
+        # An example parameter that is in query and is required
+        -
+          name: teamName
+          in: query
+          description: Name of team to retrieve assessments for.
+          required: true
+          type: string
+        -  
+          name: noRawData
+          in: query
+          description: Specify whether you want to remove the raw data from the response.
+          required: false
+          type: boolean
+      # Expected responses for this operation:
+      responses:
+        # Response code
+        200:
+          description: Successful response
+          # A schema describing your response object.
+          # Use JSON Schema format
+          schema:
+            title: Assessment
+            type: object
+            required:
+              - teamName
+              - strategy
+              - planning
+              - coding
+              - ci
+              - incident
+              - risk
+              - design
+              - teaming
+              - release
+              - qa
+              - environments
+              - featureTeams
+            properties:
+              teamName: 
+                type: string
+              strategy:
+                type: number
+                format: integer
+              planning:
+                type: number
+                format: integer
+              coding:
+                type: number
+                format: integer
+              ci:
+                type: number
+                format: integer
+              incident:
+                type: number
+                format: integer
+              risk:
+                type: number
+                format: integer
+              design:
+                type: number
+                format: integer
+              teaming:
+                type: number
+                format: integer
+              release:
+                type: number
+                format: integer
+              qa:
+                type: number
+                format: integer
+              environments:
+                type: number
+                format: integer
+              featureTeams:
+                type: number
+                format: integer
+              rawData:
+                type: object
+              

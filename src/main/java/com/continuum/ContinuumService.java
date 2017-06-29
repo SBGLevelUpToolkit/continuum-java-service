@@ -18,6 +18,8 @@ import static com.continuum.JsonUtil.json;
 import static spark.Spark.*;
 
 public class ContinuumService {
+
+
     private static String[] getDBDetails() {
         try {
             Properties props = new Properties();
@@ -62,7 +64,7 @@ public class ContinuumService {
         }
     }
 
-    private static Assessments getAssessmentsByDate(String dateAssessed, String portfolio){
+    private static Assessments getAssessmentsByDate(String dateAssessed, String portfolio, Boolean removeRawData){
         Connection conn = null;
         Statement stmt = null;
         ArrayList<Assessment> assessments = new ArrayList<Assessment>();
@@ -143,8 +145,10 @@ public class ContinuumService {
                 assessment.setFeatureTeams(featureteams);
                 overallFeatureTeams += Integer.parseInt(featureteams);
 
-                String rawData = resultSet.getString("rawdata");
-                assessment.setRawData(rawData);
+                if(!removeRawData) {
+                    String rawData = resultSet.getString("rawdata");
+                    assessment.setRawData(rawData);
+                }
 
                 numberOfRecords++;
                 assessments.add(assessment);
@@ -163,7 +167,6 @@ public class ContinuumService {
             assessmentOverall.setQa(String.valueOf(overallQA/numberOfRecords));
             assessmentOverall.setEnvironments(String.valueOf(overallEnvironments/numberOfRecords));
             assessmentOverall.setFeatureTeams(String.valueOf(overallFeatureTeams/numberOfRecords));
-            assessmentOverall.setRawData("{}");
             assessments.add(assessmentOverall);
 
             return new Assessments(dateAssessed, portfolio, assessments);
@@ -173,7 +176,7 @@ public class ContinuumService {
         }
     }
 
-    private static ArrayList<Assessments> getAssessments(){
+    private static ArrayList<Assessments> getAssessments(Boolean removeRawData){
 
         String portfolioQuery = "SELECT DISTINCT portfolio from ContinuumAssessmentResults";
         ArrayList<Assessments> allAssessmentsDone = new ArrayList<Assessments>();
@@ -182,14 +185,14 @@ public class ContinuumService {
             String dateQuery = "SELECT DISTINCT dateassessed from ContinuumAssessmentResults WHERE portfolio = '" + portfolio + "'";
             ArrayList<String> assessmentDates = getDistinctDetailsFor("dateassessed", dateQuery);
             for(String assessmentDate: assessmentDates){
-                allAssessmentsDone.add(getAssessmentsByDate(assessmentDate, portfolio));
+                allAssessmentsDone.add(getAssessmentsByDate(assessmentDate, portfolio, removeRawData));
             }
         }
 
         return allAssessmentsDone;
     }
 
-    private static Assessment getAssessmentForTeam(String teamName){
+    private static Assessment getAssessmentForTeam(String teamName, Boolean removeRawData){
         Connection conn = null;
         Statement stmt = null;
         Assessment assessment = new Assessment();
@@ -244,8 +247,10 @@ public class ContinuumService {
                 String featureteams = resultSet.getString("featureteams");
                 assessment.setFeatureTeams(featureteams);
 
-                String rawData = resultSet.getString("rawdata");
-                assessment.setRawData(rawData);
+                if(!removeRawData) {
+                    String rawData = resultSet.getString("rawdata");
+                    assessment.setRawData(rawData);
+                }
             }
 
             return assessment;
@@ -309,6 +314,8 @@ public class ContinuumService {
 
     public static void main(String[] args) {
 
+        port(8080);
+
         post("/saveTeamData", new Route() {
             public Object handle(Request request, Response response) throws Exception {
 
@@ -361,7 +368,8 @@ public class ContinuumService {
 
         get("/assessments", new Route() {
             public Object handle(Request req, Response res) throws Exception {
-                return getAssessments();
+                Boolean removeRawData = Boolean.valueOf(req.queryParams("noRawData"));
+                return getAssessments(removeRawData);
             }
         }, json());
 
@@ -369,7 +377,8 @@ public class ContinuumService {
         get("/assessment", new Route() {
             public Object handle(Request request, Response response) throws Exception {
                 String teamName = request.queryParams("teamName");
-                Assessment teamAssessment = getAssessmentForTeam(teamName);
+                Boolean removeRawData = Boolean.valueOf(request.queryParams("noRawData"));
+                Assessment teamAssessment = getAssessmentForTeam(teamName, removeRawData);
                 return teamAssessment;
             }
         }, json());
