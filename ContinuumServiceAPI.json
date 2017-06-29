@@ -52,58 +52,60 @@
                                             ],
                                             "properties": {
                                                 "teamName": {
-                                                    "type": "string"
+                                                    "type": "string",
+                                                    "description": "The name of the team assessed"
                                                 },
                                                 "strategy": {
-                                                    "type": "number",
-                                                    "format": "integer"
+                                                    "type": "integer",
+                                                    "description": "The maturity level between 0 - 5 for strategy. 0 is lowest and 5 is highest."
                                                 },
                                                 "planning": {
-                                                    "type": "number",
-                                                    "format": "integer"
+                                                    "type": "integer",
+                                                    "description": "The maturity level between 0 - 5 for planning. 0 is lowest and 5 is highest."
                                                 },
                                                 "coding": {
-                                                    "type": "number",
-                                                    "format": "integer"
+                                                    "type": "integer",
+                                                    "description": "The maturity level between 0 - 5 for coding practices. 0 is lowest and 5 is highest."
                                                 },
                                                 "ci": {
-                                                    "type": "number",
-                                                    "format": "integer"
+                                                    "type": "integer",
+                                                    "description": "The maturity level between 0 - 5 for continuous integration. 0 is lowest and 5 is highest."
                                                 },
                                                 "incident": {
-                                                    "type": "number",
-                                                    "format": "integer"
+                                                    "type": "integer",
+                                                    "description": "The maturity level between 0 - 5 for incident management. 0 is lowest and 5 is highest."
                                                 },
                                                 "risk": {
-                                                    "type": "number",
-                                                    "format": "integer"
+                                                    "type": "integer",
+                                                    "description": "The maturity level between 0 - 5 for risk management. 0 is lowest and 5 is highest."
                                                 },
                                                 "design": {
-                                                    "type": "number",
-                                                    "format": "integer"
+                                                    "type": "integer",
+                                                    "description": "The maturity level between 0 - 5 for software design. 0 is lowest and 5 is highest."
                                                 },
                                                 "teaming": {
-                                                    "type": "number",
-                                                    "format": "integer"
+                                                    "type": "integer",
+                                                    "description": "The maturity level between 0 - 5 for teaming. 0 is lowest and 5 is highest."
                                                 },
                                                 "release": {
-                                                    "type": "number",
-                                                    "format": "integer"
+                                                    "type": "integer",
+                                                    "description": "The maturity level between 0 - 5 for release management. 0 is lowest and 5 is highest."
                                                 },
                                                 "qa": {
-                                                    "type": "number",
-                                                    "format": "integer"
+                                                    "type": "integer",
+                                                    "description": "The maturity level between 0 - 5 for quality assurance. 0 is lowest and 5 is highest."
                                                 },
                                                 "environments": {
-                                                    "type": "number",
-                                                    "format": "integer"
+                                                    "type": "integer",
+                                                    "description": "The maturity level between 0 - 5 for environments. 0 is lowest and 5 is highest."
                                                 },
                                                 "featureTeams": {
-                                                    "type": "number",
-                                                    "format": "integer"
+                                                    "type": "integer",
+                                                    "description": "The maturity level between 0 - 5 for feature teaming. 0 is lowest and 5 is highest."
                                                 },
                                                 "rawData": {
-                                                    "type": "object"
+                                                    "type": "object",
+                                                    "description": "The raw data for all the questions for the assessment in question. This is not returned if the noRawData flag is true."
                                                 }
                                             }
                                         }
@@ -157,58 +159,60 @@
                             ],
                             "properties": {
                                 "teamName": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "description": "The name of the team assessed"
                                 },
                                 "strategy": {
-                                    "type": "number",
-                                    "format": "integer"
+                                    "type": "integer",
+                                    "description": "The maturity level between 0 - 5 for strategy. 0 is lowest and 5 is highest."
                                 },
                                 "planning": {
-                                    "type": "number",
-                                    "format": "integer"
+                                    "type": "integer",
+                                    "description": "The maturity level between 0 - 5 for planning. 0 is lowest and 5 is highest."
                                 },
                                 "coding": {
-                                    "type": "number",
-                                    "format": "integer"
+                                    "type": "integer",
+                                    "description": "The maturity level between 0 - 5 for coding practices. 0 is lowest and 5 is highest."
                                 },
                                 "ci": {
-                                    "type": "number",
-                                    "format": "integer"
+                                    "type": "integer",
+                                    "description": "The maturity level between 0 - 5 for continuous integration. 0 is lowest and 5 is highest."
                                 },
                                 "incident": {
-                                    "type": "number",
-                                    "format": "integer"
+                                    "type": "integer",
+                                    "description": "The maturity level between 0 - 5 for incident management. 0 is lowest and 5 is highest."
                                 },
                                 "risk": {
-                                    "type": "number",
-                                    "format": "integer"
+                                    "type": "integer",
+                                    "description": "The maturity level between 0 - 5 for risk management. 0 is lowest and 5 is highest."
                                 },
                                 "design": {
-                                    "type": "number",
-                                    "format": "integer"
+                                    "type": "integer",
+                                    "description": "The maturity level between 0 - 5 for software design. 0 is lowest and 5 is highest."
                                 },
                                 "teaming": {
-                                    "type": "number",
-                                    "format": "integer"
+                                    "type": "integer",
+                                    "description": "The maturity level between 0 - 5 for teaming. 0 is lowest and 5 is highest."
                                 },
                                 "release": {
-                                    "type": "number",
-                                    "format": "integer"
+                                    "type": "integer",
+                                    "description": "The maturity level between 0 - 5 for release management. 0 is lowest and 5 is highest."
                                 },
                                 "qa": {
-                                    "type": "number",
-                                    "format": "integer"
+                                    "type": "integer",
+                                    "description": "The maturity level between 0 - 5 for quality assurance. 0 is lowest and 5 is highest."
                                 },
                                 "environments": {
-                                    "type": "number",
-                                    "format": "integer"
+                                    "type": "integer",
+                                    "description": "The maturity level between 0 - 5 for environments. 0 is lowest and 5 is highest."
                                 },
                                 "featureTeams": {
-                                    "type": "number",
-                                    "format": "integer"
+                                    "type": "integer",
+                                    "description": "The maturity level between 0 - 5 for feature teaming. 0 is lowest and 5 is highest."
                                 },
                                 "rawData": {
-                                    "type": "object"
+                                    "type": "object",
+                                    "description": "The raw data for all the questions for the assessment in question. This is not returned if the noRawData flag is true."
                                 }
                             }
                         }
