@@ -12,6 +12,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Properties;
 
 import static com.continuum.JsonUtil.json;
@@ -64,7 +65,7 @@ public class ContinuumService {
         }
     }
 
-    private static Assessments getAssessmentsByDate(String dateAssessed, String portfolio, Boolean removeRawData){
+    private static Assessments getAssessmentsByDate(String dateAssessed, String portfolio, Boolean removeRawData, ArrayList<String> previousDates){
         Connection conn = null;
         Statement stmt = null;
         ArrayList<Assessment> assessments = new ArrayList<Assessment>();
@@ -75,8 +76,15 @@ public class ContinuumService {
             conn = DriverManager.getConnection(dbDetails[0], dbDetails[1], dbDetails[2]);
             stmt = conn.createStatement();
 
-            String queryStatement = "SELECT * from ContinuumAssessmentResults where dateassessed = '"
-                    + dateAssessed + "' AND portfolio = '" + portfolio + "'";
+            String queryStatement = "SELECT * from ContinuumAssessmentResults where dateassessed = '";
+
+            for(String date: previousDates){
+                queryStatement += date + "' OR dateassessed = '";
+            }
+
+            int length = " OR dateassessed = '".length();
+            queryStatement = queryStatement.substring(0, queryStatement.length() - length) + " AND portfolio = '" + portfolio + "'";
+
             ResultSet resultSet = stmt.executeQuery(queryStatement);
 
             int numberOfRecords = 0;
@@ -93,65 +101,71 @@ public class ContinuumService {
             double overallEnvironments = 0;
             double overallFeatureTeams = 0;
 
+            ArrayList<String> teamObtained = new ArrayList<String>();
+
             while (resultSet.next()){
-                Assessment assessment = new Assessment();
-                assessment.setTeamName(resultSet.getString("teamName"));
+                String teamName = resultSet.getString("teamName");
+                if(!teamObtained.contains(teamName)) {
+                    Assessment assessment = new Assessment();
+                    assessment.setTeamName(teamName);
 
-                String strategy = resultSet.getString("strategy");
-                assessment.setStrategy(strategy);
-                overallStrategy += Integer.parseInt(strategy);
+                    String strategy = resultSet.getString("strategy");
+                    assessment.setStrategy(strategy);
+                    overallStrategy += Integer.parseInt(strategy);
 
-                String planning = resultSet.getString("planning");
-                assessment.setPlanning(planning);
-                overallPlanning += Integer.parseInt(planning);
+                    String planning = resultSet.getString("planning");
+                    assessment.setPlanning(planning);
+                    overallPlanning += Integer.parseInt(planning);
 
-                String coding = resultSet.getString("coding");
-                assessment.setCoding(coding);
-                overallCoding += Integer.parseInt(coding);
+                    String coding = resultSet.getString("coding");
+                    assessment.setCoding(coding);
+                    overallCoding += Integer.parseInt(coding);
 
-                String ci = resultSet.getString("ci");
-                assessment.setCi(ci);
-                overallCI += Integer.parseInt(ci);
+                    String ci = resultSet.getString("ci");
+                    assessment.setCi(ci);
+                    overallCI += Integer.parseInt(ci);
 
-                String incident = resultSet.getString("incident");
-                assessment.setIncident(incident);
-                overallIncident += Integer.parseInt(incident);
+                    String incident = resultSet.getString("incident");
+                    assessment.setIncident(incident);
+                    overallIncident += Integer.parseInt(incident);
 
-                String risk = resultSet.getString("risk");
-                assessment.setRisk(risk);
-                overallRisk += Integer.parseInt(risk);
+                    String risk = resultSet.getString("risk");
+                    assessment.setRisk(risk);
+                    overallRisk += Integer.parseInt(risk);
 
-                String design = resultSet.getString("design");
-                assessment.setDesign(design);
-                overallDesign += Integer.parseInt(design);
+                    String design = resultSet.getString("design");
+                    assessment.setDesign(design);
+                    overallDesign += Integer.parseInt(design);
 
-                String teaming = resultSet.getString("teaming");
-                assessment.setTeaming(teaming);
-                overallTeaming += Integer.parseInt(teaming);
+                    String teaming = resultSet.getString("teaming");
+                    assessment.setTeaming(teaming);
+                    overallTeaming += Integer.parseInt(teaming);
 
-                String release = resultSet.getString("release");
-                assessment.setRelease(release);
-                overallRelease += Integer.parseInt(release);
+                    String release = resultSet.getString("release");
+                    assessment.setRelease(release);
+                    overallRelease += Integer.parseInt(release);
 
-                String quality = resultSet.getString("quality");
-                assessment.setQa(quality);
-                overallQA += Integer.parseInt(quality);
+                    String quality = resultSet.getString("quality");
+                    assessment.setQa(quality);
+                    overallQA += Integer.parseInt(quality);
 
-                String environments = resultSet.getString("environments");
-                assessment.setEnvironments(environments);
-                overallEnvironments += Integer.parseInt(environments);
+                    String environments = resultSet.getString("environments");
+                    assessment.setEnvironments(environments);
+                    overallEnvironments += Integer.parseInt(environments);
 
-                String featureteams = resultSet.getString("featureteams");
-                assessment.setFeatureTeams(featureteams);
-                overallFeatureTeams += Integer.parseInt(featureteams);
+                    String featureteams = resultSet.getString("featureteams");
+                    assessment.setFeatureTeams(featureteams);
+                    overallFeatureTeams += Integer.parseInt(featureteams);
 
-                if(!removeRawData) {
-                    String rawData = resultSet.getString("rawdata");
-                    assessment.setRawData(rawData);
+                    if (!removeRawData) {
+                        String rawData = resultSet.getString("rawdata");
+                        assessment.setRawData(rawData);
+                    }
+
+                    numberOfRecords++;
+                    assessments.add(assessment);
+                    teamObtained.add(teamName);
                 }
-
-                numberOfRecords++;
-                assessments.add(assessment);
             }
             Assessment assessmentOverall = new Assessment();
             assessmentOverall.setTeamName("Average For All The Teams");
@@ -176,6 +190,29 @@ public class ContinuumService {
         }
     }
 
+    private static ArrayList<String> getPreviousAssessmentDates(String currentDateString, ArrayList<String> otherDates){
+        ArrayList<String> previousDates = new ArrayList<String>();
+
+        previousDates.add(currentDateString);
+
+        for(String assessmentDate: otherDates){
+            try {
+                DateFormat format = new SimpleDateFormat("dd-MM-yyyy", Locale.ENGLISH);
+                Date date = format.parse(assessmentDate);
+                Date currentDate = format.parse(currentDateString);
+
+                if(date.before(currentDate)){
+                    previousDates.add(assessmentDate);
+                }
+            }
+            catch (Exception ex){
+
+            }
+        }
+
+        return previousDates;
+    }
+
     private static ArrayList<Assessments> getAssessments(Boolean removeRawData){
 
         String portfolioQuery = "SELECT DISTINCT portfolio from ContinuumAssessmentResults";
@@ -185,7 +222,7 @@ public class ContinuumService {
             String dateQuery = "SELECT DISTINCT dateassessed from ContinuumAssessmentResults WHERE portfolio = '" + portfolio + "'";
             ArrayList<String> assessmentDates = getDistinctDetailsFor("dateassessed", dateQuery);
             for(String assessmentDate: assessmentDates){
-                allAssessmentsDone.add(getAssessmentsByDate(assessmentDate, portfolio, removeRawData));
+                allAssessmentsDone.add(getAssessmentsByDate(assessmentDate, portfolio, removeRawData, getPreviousAssessmentDates(assessmentDate, assessmentDates)));
             }
         }
 
