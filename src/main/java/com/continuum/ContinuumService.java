@@ -1,5 +1,11 @@
 package com.continuum;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import jdk.nashorn.internal.parser.JSONParser;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Filter;
 import spark.Request;
 import spark.Response;
@@ -10,16 +16,15 @@ import java.io.InputStream;
 import java.sql.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.Date;
-import java.util.Locale;
-import java.util.Properties;
 
 import static com.continuum.JsonUtil.json;
 import static spark.Spark.*;
 
 public class ContinuumService {
 
+    final static Logger logger = LoggerFactory.getLogger(ContinuumService.class);
 
     private static String[] getDBDetails() {
         try {
@@ -38,6 +43,7 @@ public class ContinuumService {
             return dbDetails;
         }
         catch (Exception exception){
+            logger.error(exception.getMessage());
             return new String[] {"", "", "", ""};
         }
     }
@@ -61,6 +67,7 @@ public class ContinuumService {
             return distinctResults;
         }
         catch (Exception exception){
+            logger.error(exception.getMessage());
             return new ArrayList<String>();
         }
     }
@@ -76,14 +83,14 @@ public class ContinuumService {
             conn = DriverManager.getConnection(dbDetails[0], dbDetails[1], dbDetails[2]);
             stmt = conn.createStatement();
 
-            String queryStatement = "SELECT * from ContinuumAssessmentResults where dateassessed = '";
+            String queryStatement = "SELECT * from ContinuumAssessmentResults where portfolio = '" + portfolio + "' AND (dateassessed = '";
 
             for(String date: previousDates){
                 queryStatement += date + "' OR dateassessed = '";
             }
 
             int length = " OR dateassessed = '".length();
-            queryStatement = queryStatement.substring(0, queryStatement.length() - length) + " AND portfolio = '" + portfolio + "'";
+            queryStatement = queryStatement.substring(0, queryStatement.length() - length) + ")";
 
             ResultSet resultSet = stmt.executeQuery(queryStatement);
 
@@ -102,10 +109,41 @@ public class ContinuumService {
             double overallFeatureTeams = 0;
 
             ArrayList<String> teamObtained = new ArrayList<String>();
+            Map<String, String> teamDate = new HashMap<String, String>();
+            Map<String, Assessment> teamAssessment = new HashMap<String, Assessment>();
 
             while (resultSet.next()){
                 String teamName = resultSet.getString("teamName");
-                if(!teamObtained.contains(teamName)) {
+                String dateOfAssessment = resultSet.getString("dateassessed");
+                String portfolioName = resultSet.getString("portfolio");
+
+                DateFormat format = new SimpleDateFormat("dd-MM-yyyy", Locale.ENGLISH);
+                Date date = format.parse(dateOfAssessment);
+
+                if(teamObtained.contains(teamName)){
+                    Date previousDate = format.parse(teamDate.get(teamName));
+                    if(previousDate.before(date)){
+                        Assessment assessmentToBeRemoved = teamAssessment.get(teamName);
+                        assessments.remove(assessmentToBeRemoved);
+                        teamObtained.remove(teamName);
+                        overallStrategy = assessmentToBeRemoved.removeValueFromAssessment("Strategy", overallStrategy);
+                        overallPlanning = assessmentToBeRemoved.removeValueFromAssessment("Planning", overallPlanning);
+                        overallCoding = assessmentToBeRemoved.removeValueFromAssessment("Coding", overallCoding);
+                        overallCI = assessmentToBeRemoved.removeValueFromAssessment("CI", overallCI);
+                        overallIncident = assessmentToBeRemoved.removeValueFromAssessment("Incident", overallIncident);
+                        overallRisk = assessmentToBeRemoved.removeValueFromAssessment("Risk", overallRisk);
+                        overallDesign = assessmentToBeRemoved.removeValueFromAssessment("Design", overallDesign);
+                        overallTeaming = assessmentToBeRemoved.removeValueFromAssessment("Teaming", overallTeaming);
+                        overallRelease = assessmentToBeRemoved.removeValueFromAssessment("Release", overallRelease);
+                        overallQA = assessmentToBeRemoved.removeValueFromAssessment("QA", overallQA);
+                        overallEnvironments = assessmentToBeRemoved.removeValueFromAssessment("Environments", overallEnvironments);
+                        overallFeatureTeams = assessmentToBeRemoved.removeValueFromAssessment("FeatureTeams", overallFeatureTeams);
+                        numberOfRecords--;
+                    }
+
+                }
+
+                if(!teamObtained.contains(teamName) && portfolioName.equals(portfolio)) {
                     Assessment assessment = new Assessment();
                     assessment.setTeamName(teamName);
 
@@ -157,6 +195,14 @@ public class ContinuumService {
                     assessment.setFeatureTeams(featureteams);
                     overallFeatureTeams += Integer.parseInt(featureteams);
 
+                    String recommendedCapabilities = resultSet.getString("recommendedCapabilities");
+                    assessment.setRecommendedCapabilities(recommendedCapabilities);
+
+                    String capabilitiesToStop = resultSet.getString("capabilitiesToStop");
+                    assessment.setCapabilitiesToStop(capabilitiesToStop);
+
+                    assessment.setRemedyId();
+
                     if (!removeRawData) {
                         String rawData = resultSet.getString("rawdata");
                         assessment.setRawData(rawData);
@@ -165,6 +211,8 @@ public class ContinuumService {
                     numberOfRecords++;
                     assessments.add(assessment);
                     teamObtained.add(teamName);
+                    teamDate.put(teamName, dateOfAssessment);
+                    teamAssessment.put(teamName, assessment);
                 }
             }
             Assessment assessmentOverall = new Assessment();
@@ -186,6 +234,7 @@ public class ContinuumService {
             return new Assessments(dateAssessed, portfolio, assessments);
         }
         catch (Exception exception){
+            logger.error(exception.getMessage());
             return new Assessments(dateAssessed, portfolio, new ArrayList<Assessment>());
         }
     }
@@ -206,7 +255,7 @@ public class ContinuumService {
                 }
             }
             catch (Exception ex){
-
+                logger.error(ex.getMessage());
             }
         }
 
@@ -239,60 +288,78 @@ public class ContinuumService {
             Class.forName("com.mysql.jdbc.Driver");
             conn = DriverManager.getConnection(dbDetails[0], dbDetails[1], dbDetails[2]);
             stmt = conn.createStatement();
+            DateFormat format = new SimpleDateFormat("dd-MM-yyyy", Locale.ENGLISH);
 
             String queryStatement = "SELECT * from ContinuumAssessmentResults where teamName = '"
                     + teamName + "'";
             ResultSet resultSet = stmt.executeQuery(queryStatement);
 
+            Date previousDate = format.parse("01-01-1990");
 
             while (resultSet.next()){
-                assessment.setTeamName(resultSet.getString("teamName"));
+                String dateOfAssessment = resultSet.getString("dateassessed");
+                Date date = format.parse(dateOfAssessment);
 
-                String strategy = resultSet.getString("strategy");
-                assessment.setStrategy(strategy);
+                if(date.after(previousDate)) {
+                    assessment.setTeamName(resultSet.getString("teamName"));
 
-                String planning = resultSet.getString("planning");
-                assessment.setPlanning(planning);
+                    String strategy = resultSet.getString("strategy");
+                    assessment.setStrategy(strategy);
 
-                String coding = resultSet.getString("coding");
-                assessment.setCoding(coding);
+                    String planning = resultSet.getString("planning");
+                    assessment.setPlanning(planning);
 
-                String ci = resultSet.getString("ci");
-                assessment.setCi(ci);
+                    String coding = resultSet.getString("coding");
+                    assessment.setCoding(coding);
 
-                String incident = resultSet.getString("incident");
-                assessment.setIncident(incident);
+                    String ci = resultSet.getString("ci");
+                    assessment.setCi(ci);
 
-                String risk = resultSet.getString("risk");
-                assessment.setRisk(risk);
+                    String incident = resultSet.getString("incident");
+                    assessment.setIncident(incident);
 
-                String design = resultSet.getString("design");
-                assessment.setDesign(design);
+                    String risk = resultSet.getString("risk");
+                    assessment.setRisk(risk);
 
-                String teaming = resultSet.getString("teaming");
-                assessment.setTeaming(teaming);
+                    String design = resultSet.getString("design");
+                    assessment.setDesign(design);
 
-                String release = resultSet.getString("release");
-                assessment.setRelease(release);
+                    String teaming = resultSet.getString("teaming");
+                    assessment.setTeaming(teaming);
 
-                String quality = resultSet.getString("quality");
-                assessment.setQa(quality);
+                    String release = resultSet.getString("release");
+                    assessment.setRelease(release);
 
-                String environments = resultSet.getString("environments");
-                assessment.setEnvironments(environments);
+                    String quality = resultSet.getString("quality");
+                    assessment.setQa(quality);
 
-                String featureteams = resultSet.getString("featureteams");
-                assessment.setFeatureTeams(featureteams);
+                    String environments = resultSet.getString("environments");
+                    assessment.setEnvironments(environments);
 
-                if(!removeRawData) {
-                    String rawData = resultSet.getString("rawdata");
-                    assessment.setRawData(rawData);
+                    String featureteams = resultSet.getString("featureteams");
+                    assessment.setFeatureTeams(featureteams);
+
+                    String recommendedCapabilities = resultSet.getString("recommendedCapabilities");
+                    assessment.setRecommendedCapabilities(recommendedCapabilities);
+
+                    String capabilitiesToStop = resultSet.getString("capabilitiesToStop");
+                    assessment.setCapabilitiesToStop(capabilitiesToStop);
+
+                    assessment.setRemedyId();
+
+                    previousDate = date;
+
+                    if (!removeRawData) {
+                        String rawData = resultSet.getString("rawdata");
+                        assessment.setRawData(rawData);
+                    }
                 }
             }
 
             return assessment;
         }
         catch (Exception exception){
+            logger.error(exception.getMessage());
             return assessment;
         }
     }
@@ -310,7 +377,7 @@ public class ContinuumService {
             createTableIfItDoesNotExists();
         }
         catch (Exception exception){
-
+            logger.error(exception.getMessage());
         }
     }
 
@@ -340,12 +407,14 @@ public class ContinuumService {
                     + "   dateassessed       VARCHAR(100),"
                     + "   portfolio          VARCHAR(150),"
                     + "   rawdata            VARCHAR(200)"
+                    + "   recommendedCapabilities            VARCHAR(200)"
+                    + "   capabilitiesToStop            VARCHAR(200)"
                     + "   UNIQUE KEY 'my_unique_key' ('teamName','dateassessed','portfolio'))";
 
             statement.execute(sqlCreate);
         }
         catch (Exception exception){
-
+            logger.error(exception.getMessage());
         }
     }
 
@@ -377,6 +446,26 @@ public class ContinuumService {
                 String dateOfEvaluation = dateFormat.format(new Date());
                 String portfolioName = request.queryParams("portfolioName");
                 String rawData = request.queryParams("rawData");
+
+                JSONObject json = new JSONObject(request.body());
+
+                String recommendedCapabilities;
+                String capabilitiesToStop;
+
+                try {
+                    recommendedCapabilities = json.get("recommendedCapabilities").toString();
+                }
+                catch(Exception ex){
+                    recommendedCapabilities = "";
+                }
+
+                try {
+                    capabilitiesToStop = json.get("capabilitiesToStop").toString();
+                }
+                catch(Exception ex){
+                    capabilitiesToStop = "";
+                }
+
                 String[] dbDetails = getDBDetails();
 
                 try {
@@ -385,8 +474,9 @@ public class ContinuumService {
                     stmt = conn.createStatement();
 
                     String sql = String.format("REPLACE INTO ContinuumAssessmentResults " +
-                                    "VALUES ('%s',%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'%s', '%s', '%s')", teamName, strategy, planning, coding, ci,
-                            incident, risk, design, teaming, release, qa, environments, featureTeams, dateOfEvaluation, portfolioName, rawData);
+                                    "VALUES ('%s',%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'%s', '%s', '%s', '%s', '%s')", teamName, strategy, planning, coding, ci,
+                            incident, risk, design, teaming, release, qa, environments, featureTeams, dateOfEvaluation, portfolioName, rawData,
+                            recommendedCapabilities, capabilitiesToStop);
 
                     int insertedRecord = stmt.executeUpdate(sql);
 
@@ -397,6 +487,7 @@ public class ContinuumService {
                     }
                 }
                 catch (SQLException exception){
+                    logger.error("Error Code: " + exception.toString());
                     return "Error Code: " + exception.toString();
                 }
 
@@ -405,6 +496,7 @@ public class ContinuumService {
 
         get("/assessments", new Route() {
             public Object handle(Request req, Response res) throws Exception {
+                logger.info("Request From: " + req.host());
                 Boolean removeRawData = Boolean.valueOf(req.queryParams("noRawData"));
                 return getAssessments(removeRawData);
             }
@@ -413,6 +505,7 @@ public class ContinuumService {
 
         get("/assessment", new Route() {
             public Object handle(Request request, Response response) throws Exception {
+                logger.info("Request From: " + request.host());
                 String teamName = request.queryParams("teamName");
                 Boolean removeRawData = Boolean.valueOf(request.queryParams("noRawData"));
                 Assessment teamAssessment = getAssessmentForTeam(teamName, removeRawData);
