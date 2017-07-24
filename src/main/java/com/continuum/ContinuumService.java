@@ -1,8 +1,6 @@
 package com.continuum;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import jdk.nashorn.internal.parser.JSONParser;
+import org.apache.commons.codec.binary.Base64;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,8 +9,15 @@ import spark.Request;
 import spark.Response;
 import spark.Route;
 
+import javax.crypto.Cipher;
+import javax.xml.bind.DatatypeConverter;
+import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.InputStream;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.sql.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -39,6 +44,7 @@ public class ContinuumService {
             dbDetails[1] = props.get("CONTINUUM_DB_USERNAME").toString();
             dbDetails[2] = props.get("CONTINUUM_DB_PASSWORD").toString();
             dbDetails[3] = props.get("MY_SQL_URL").toString();
+
 
             return dbDetails;
         }
@@ -418,6 +424,67 @@ public class ContinuumService {
         }
     }
 
+    private static String getKey(String filename) {
+        try {
+            String strKeyPEM = "";
+            BufferedReader br = new BufferedReader(new FileReader(filename));
+            String line;
+            while ((line = br.readLine()) != null) {
+                strKeyPEM += line + "\n";
+            }
+            br.close();
+            return strKeyPEM;
+        }
+        catch(Exception ex){
+            logger.error(ex.getMessage());
+            return "";
+        }
+    }
+
+    public static PrivateKey getPrivateKeyFromString(String key) {
+        String privateKeyPEM = key.replace("-----BEGIN PRIVATE KEY-----\n", "")
+                .replace("\n-----END PRIVATE KEY-----\n", "");
+        PKCS8EncodedKeySpec keySpec =
+                new PKCS8EncodedKeySpec(DatatypeConverter.parseBase64Binary(privateKeyPEM));
+
+        try {
+            KeyFactory kf = KeyFactory.getInstance("RSA");
+            PrivateKey privKey = kf.generatePrivate(keySpec);
+            return privKey;
+        }
+        catch(Exception exception){
+            logger.error(exception.getMessage());
+            return null;
+        }
+    }
+
+    public static PrivateKey getPrivateKey(String filename) {
+        String privateKeyPEM = getKey(filename);
+        return getPrivateKeyFromString(privateKeyPEM);
+    }
+
+
+    private static String decryptPassword(String encryptedPassword){
+        try{
+            Properties props = new Properties();
+            String configFile = System.getProperty("user.dir") + "/config/private_file_location.properties";
+            InputStream in = new FileInputStream(configFile);
+            props.load(in);
+            in.close();
+
+            String privateKeyFileLocation = props.get("PRIVATE_KEY_FILE_LOCATION").toString();
+            final PrivateKey privateKey = getPrivateKey(privateKeyFileLocation);
+
+            final Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.DECRYPT_MODE, privateKey);
+            return new String(cipher.doFinal(Base64.decodeBase64(encryptedPassword)), "UTF-8");
+        }
+        catch(Exception exception){
+            logger.error(exception.getMessage());
+            return "";
+        }
+    }
+
     public static void main(String[] args) {
 
         port(8080);
@@ -510,6 +577,64 @@ public class ContinuumService {
                 Boolean removeRawData = Boolean.valueOf(request.queryParams("noRawData"));
                 Assessment teamAssessment = getAssessmentForTeam(teamName, removeRawData);
                 return teamAssessment;
+            }
+        }, json());
+
+        post("/login", new Route() {
+            public Object handle(Request request, Response response) throws Exception {
+                logger.info("Request From: " + request.host());
+                Connection conn = null;
+                Statement stmt = null;
+                Map <String, String> errorResult = new HashMap<String, String>();
+
+                JSONObject json = new JSONObject(request.body());
+
+                String userName;
+                String encryptedPassword;
+
+                try {
+                    userName = json.get("userName").toString();
+                }
+                catch(Exception ex){
+                    userName = "";
+                }
+
+                try {
+                    encryptedPassword = json.get("password").toString();
+                }
+                catch(Exception ex){
+                    encryptedPassword = "";
+                }
+
+                String[] dbDetails = getDBDetails();
+
+                try {
+                    Class.forName("com.mysql.jdbc.Driver");
+                    conn = DriverManager.getConnection(dbDetails[0], dbDetails[1], dbDetails[2]);
+                    stmt = conn.createStatement();
+                    String password = decryptPassword(encryptedPassword);
+
+                    String queryStatement = "SELECT * from ContinuumAssessmentUsers where username = '"
+                            + userName + "' AND password = '"+ password + "'";
+                    ResultSet resultSet = stmt.executeQuery(queryStatement);
+
+                    if(resultSet.next()){
+                        String username = resultSet.getString("username");
+                        String teamname = resultSet.getString("teamname");
+                        String portfolio = resultSet.getString("portfolio");
+                        return new UserDetails(username, teamname, portfolio);
+                    }
+                    else {
+                        errorResult.put("Error", "Error: User not found");
+
+                        return errorResult;
+                    }
+                }
+                catch(SQLException exception){
+                    logger.error("Error Code: " + exception.toString());
+                    errorResult.put("Error", "Error: User not found");
+                    return errorResult;
+                }
             }
         }, json());
 
