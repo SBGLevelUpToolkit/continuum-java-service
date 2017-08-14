@@ -172,6 +172,8 @@ public class Assessment {
         remedyMapping.put("Insurance - Coverage Squad 1", "SGP000000007150");
         remedyMapping.put("Insurance - Coverage Squad 2", "SGP000000007150");
         remedyMapping.put("Wealth and Investments and Fiduciary", "SGP000000004783");
+        remedyMapping.put("Financial Messaging (AMH)", "SGP000000009358");
+        remedyMapping.put("Risk Technology: Cybernetics", "SGP000000007850");
     }
 
     public void setFeatureTeams(String featureTeams) {

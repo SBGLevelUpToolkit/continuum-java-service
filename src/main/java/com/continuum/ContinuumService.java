@@ -412,10 +412,10 @@ public class ContinuumService {
                     + "   featureteams       INTEGER,"
                     + "   dateassessed       VARCHAR(100),"
                     + "   portfolio          VARCHAR(150),"
-                    + "   rawdata            VARCHAR(200)"
-                    + "   recommendedCapabilities            VARCHAR(200)"
-                    + "   capabilitiesToStop            VARCHAR(200)"
-                    + "   UNIQUE KEY 'my_unique_key' ('teamName','dateassessed','portfolio'))";
+                    + "   rawdata            longtext,"
+                    + "   recommendedCapabilities   longtext,"
+                    + "   capabilitiesToStop        longtext,"
+                    + "   UNIQUE KEY my_unique_key (teamName,dateassessed,portfolio))";
 
             statement.execute(sqlCreate);
         }
