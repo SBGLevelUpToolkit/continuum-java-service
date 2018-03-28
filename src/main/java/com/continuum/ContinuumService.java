@@ -20,6 +20,7 @@ import java.security.PrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.sql.*;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Date;
@@ -282,6 +283,98 @@ public class ContinuumService {
         }
 
         return allAssessmentsDone;
+    }
+
+    private static EYWAssessment getEYWAssessment(ArrayList<EYWAssessment> assessments, String teamName, String date) throws ParseException {
+        DateFormat format = new SimpleDateFormat("dd-MM-yyyy", Locale.ENGLISH);
+        Date formattedDate = format.parse(date);
+
+        for(EYWAssessment assessment: assessments){
+            if(assessment.isTeamNameEqualAndDateBefore(teamName, formattedDate)){
+                return assessment;
+            }
+        }
+        return null;
+    }
+
+    private static ArrayList<EYWAssessment> getEarnYourWingsAssessments(){
+
+        Connection conn = null;
+        Statement stmt = null;
+        ArrayList<EYWAssessment> assessments = new ArrayList<EYWAssessment>();
+
+        EYWAssessment retrievedAssessment;
+
+        String[] dbDetails = getDBDetails();
+
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            conn = DriverManager.getConnection(dbDetails[0], dbDetails[1], dbDetails[2]);
+            stmt = conn.createStatement();
+
+            String queryStatement = "SELECT * from ContinuumAssessmentResults";
+            ResultSet resultSet = stmt.executeQuery(queryStatement);
+
+            while (resultSet.next()){
+                String dateOfAssessment = resultSet.getString("dateassessed");
+                String teamName = resultSet.getString("teamName");
+
+                retrievedAssessment = getEYWAssessment(assessments, teamName, dateOfAssessment);
+
+                if(retrievedAssessment != null) {
+                    assessments.remove(retrievedAssessment);
+                }
+
+                EYWAssessment assessment = new EYWAssessment();
+                assessment.setTeamName(teamName);
+
+                String strategy = resultSet.getString("strategy");
+                assessment.setStrategy(strategy);
+
+                String planning = resultSet.getString("planning");
+                assessment.setPlanning(planning);
+
+                String coding = resultSet.getString("coding");
+                assessment.setCoding(coding);
+
+                String ci = resultSet.getString("ci");
+                assessment.setCi(ci);
+
+                String incident = resultSet.getString("incident");
+                assessment.setIncident(incident);
+
+                String risk = resultSet.getString("risk");
+                assessment.setRisk(risk);
+
+                String design = resultSet.getString("design");
+                assessment.setDesign(design);
+
+                String teaming = resultSet.getString("teaming");
+                assessment.setTeaming(teaming);
+
+                String release = resultSet.getString("release");
+                assessment.setRelease(release);
+
+                String quality = resultSet.getString("quality");
+                assessment.setQa(quality);
+
+                String environments = resultSet.getString("environments");
+                assessment.setEnvironments(environments);
+
+                String featureteams = resultSet.getString("featureteams");
+                assessment.setFeatureTeams(featureteams);
+
+                assessment.setDateAssessed(dateOfAssessment);
+
+                assessments.add(assessment);
+            }
+
+            return assessments;
+        }
+        catch (Exception exception){
+            logger.error(exception.getMessage());
+            return assessments;
+        }
     }
 
     private static Assessment getAssessmentForTeam(String teamName, Boolean removeRawData){
@@ -566,6 +659,14 @@ public class ContinuumService {
                 logger.info("Request From: " + req.host());
                 Boolean removeRawData = Boolean.valueOf(req.queryParams("noRawData"));
                 return getAssessments(removeRawData);
+            }
+        }, json());
+
+
+        get("/governance", new Route() {
+            public Object handle(Request req, Response res) throws Exception {
+                logger.info("Request From: " + req.host());
+                return getEarnYourWingsAssessments();
             }
         }, json());
 
